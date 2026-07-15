@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C-RADAR-FV ระบบต้นแบบเพื่อการสาธิต (รุ่นที่ 2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F7F5; --surface:#FFFFFF; --ink:#182E2B; --muted:#5B7370;
+  --primary:#14564F; --primary-soft:#E3EFEC; --line:#D9E4E0;
+  --green:#2F8A57; --green-bg:#E7F3EC;
+  --amber:#C99117; --amber-bg:#FBF3DC;
+  --red:#B6423A; --red-bg:#F9E8E6;
+  --violet:#5A4E8C; --violet-bg:#EDEAF6;
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);font-size:15.5px;line-height:1.65}
+h1,h2,h3,h4{font-family:'Anuphan',sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+
+header{background:var(--primary);color:#fff;padding:18px 0 16px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .mark{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand h1{font-size:20px;font-weight:700}
+.brand p{font-size:12.5px;opacity:.82;margin-top:1px}
+.demo-badge{background:#F3C64B;color:#4A3A08;font-weight:700;font-size:12.5px;padding:6px 14px;border-radius:999px;font-family:'Anuphan',sans-serif}
+.notice{background:#0E423C;color:#CFE4DF;font-size:12.5px;padding:8px 0}
+.notice .wrap{display:flex;gap:8px;align-items:baseline}
+
+.controls{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:22px 0 14px}
+.tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.tabs button{font-family:'Anuphan',sans-serif;font-weight:600;font-size:14.5px;border:none;background:transparent;color:var(--muted);padding:8px 18px;border-radius:9px;cursor:pointer}
+.tabs button.active{background:var(--primary);color:#fff}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 13px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:6px}
+.chip .dot{width:9px;height:9px;border-radius:50%}
+.chip.on{border-color:var(--ink);color:var(--ink)}
+
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.scard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px}
+.scard .lbl{font-size:12px;color:var(--muted);font-weight:600}
+.scard .num{font-family:'Anuphan',sans-serif;font-size:27px;font-weight:700;line-height:1.25}
+.scard .sub{font-size:11.5px;color:var(--muted)}
+.scard.t-red .num{color:var(--red)} .scard.t-amber .num{color:var(--amber)} .scard.t-green .num{color:var(--green)}
+
+.main{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+.panel h2{font-size:16.5px;font-weight:700;margin-bottom:4px}
+.panel .hint{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+
+.mapgrid{position:relative;width:100%}
+.tile{position:absolute;border-radius:10px;border:1.5px solid transparent;cursor:pointer;padding:6px 8px;transition:transform .12s ease, box-shadow .12s ease;overflow:hidden}
+.tile:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(20,60,55,.16)}
+.tile.selected{border-color:var(--ink);box-shadow:0 4px 14px rgba(20,60,55,.2)}
+.tile .tname{font-size:12px;font-weight:700;line-height:1.3}
+.tile .tscore{font-family:'Anuphan',sans-serif;font-size:14.5px;font-weight:700}
+.tile .tdriver{font-size:10px;opacity:.85;line-height:1.25;margin-top:1px}
+.tile.dim{opacity:.22;pointer-events:none}
+.tile.g{background:var(--green-bg);color:#1E5C3A} .tile.g .tscore{color:var(--green)}
+.tile.y{background:var(--amber-bg);color:#6B4E0C} .tile.y .tscore{color:var(--amber)}
+.tile.r{background:var(--red-bg);color:#6E2723} .tile.r .tscore{color:var(--red)}
+.maplegend{display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.maplegend span{display:flex;align-items:center;gap:6px}
+.maplegend i{width:12px;height:12px;border-radius:4px;display:inline-block}
+.mapnote{font-size:11.5px;color:var(--muted);margin-top:8px;border-top:1px dashed var(--line);padding-top:8px}
+
+.tierpill{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:4px 14px;font-weight:700;font-size:13px;font-family:'Anuphan',sans-serif}
+.tierpill.g{background:var(--green-bg);color:var(--green)} .tierpill.y{background:var(--amber-bg);color:#8A6410} .tierpill.r{background:var(--red-bg);color:var(--red)}
+.codesignpill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-weight:600;font-size:12px;background:var(--violet-bg);color:var(--violet);font-family:'Anuphan',sans-serif}
+.dhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.dhead h3{font-size:19px;font-weight:700}
+.profile{font-size:13px;color:var(--muted);margin:4px 0 10px;background:#F7FAF9;border-left:3px solid var(--primary);padding:8px 12px;border-radius:0 8px 8px 0}
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
+.stat{background:#F7FAF9;border-radius:10px;padding:9px 12px}
+.stat .l{font-size:11px;color:var(--muted);font-weight:600}
+.stat .v{font-family:'Anuphan',sans-serif;font-size:19px;font-weight:700}
+.stat .u{font-size:10.5px;color:var(--muted)}
+.radarbox{display:flex;justify-content:center;margin:4px 0 2px}
+.bars{margin-top:8px}
+.bar{display:grid;grid-template-columns:148px 1fr 34px;gap:10px;align-items:center;margin-bottom:6px;font-size:12.5px}
+.bar .bl{color:var(--muted);font-weight:600}
+.bar .track{background:#EEF3F1;border-radius:99px;height:9px;overflow:hidden}
+.bar .fill{height:100%;border-radius:99px;background:var(--primary)}
+.bar .fill.drv{background:var(--red)}
+.bar .bv{font-family:'Anuphan',sans-serif;font-weight:700;text-align:right}
+.drvtag{display:inline-block;background:var(--red-bg);color:var(--red);font-size:10px;font-weight:700;border-radius:6px;padding:1px 6px;margin-left:5px;font-family:'Anuphan',sans-serif}
+
+.measures{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.measures h4{font-size:14px;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+.measures h4 .tag{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 8px}
+.tag.specific{background:var(--red-bg);color:var(--red)}
+.tag.contextual{background:var(--primary-soft);color:var(--primary)}
+.tag.base{background:#EFF2F1;color:var(--muted)}
+.measures ol,.measures ul{padding-left:20px}
+.measures li{margin-bottom:6px;font-size:13.5px}
+.measures li .why{display:block;font-size:11.5px;color:var(--muted)}
+.rev-note{font-size:11.5px;color:var(--muted);margin-top:10px}
+
+.codesign{margin-top:14px;background:var(--violet-bg);border-radius:12px;padding:14px 16px}
+.codesign h4{font-size:14px;color:var(--violet);margin-bottom:8px}
+.comment{background:#fff;border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:13px}
+.comment b{font-family:'Anuphan',sans-serif;font-size:12px;color:var(--violet)}
+.comment .adopted{font-size:11px;color:var(--green);font-weight:600}
+.cinput{display:flex;gap:8px;margin-top:6px}
+.cinput input{flex:1;border:1px solid #CFC8E8;border-radius:9px;padding:8px 12px;font-family:'Sarabun',sans-serif;font-size:13px;background:#fff}
+.cinput button{border:none;background:var(--violet);color:#fff;border-radius:9px;padding:8px 16px;font-family:'Anuphan',sans-serif;font-weight:600;font-size:13px;cursor:pointer}
+.codesign .cnote{font-size:11px;color:#6B62A0;margin-top:6px}
+
+.compare{margin-top:16px}
+.compgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}
+.compcol{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#FBFDFC}
+.compcol h3{font-size:15.5px;margin-bottom:2px}
+.compcol .ctx{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.tierline{display:flex;height:14px;border-radius:99px;overflow:hidden;margin:8px 0 6px}
+.tierline i{display:block;height:100%}
+.tiercount{display:flex;gap:14px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.avgdims{margin-top:10px;font-size:12.5px}
+.avgdims .row{display:grid;grid-template-columns:148px 1fr 32px;gap:8px;align-items:center;margin-bottom:5px}
+.avgdims .track{background:#E9F0ED;height:7px;border-radius:99px;overflow:hidden}
+.avgdims .fill{height:100%;border-radius:99px}
+
+.datapanel{margin-top:16px}
+.datapanel .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px}
+.datapanel .dcol{border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.datapanel .dcol h4{font-size:14px;margin-bottom:8px;color:var(--primary)}
+.datapanel .dcol ul{padding-left:18px}
+.datapanel .dcol li{font-size:13px;margin-bottom:6px}
+.datapanel .keypoint{background:var(--primary-soft);border-radius:10px;padding:10px 14px;font-size:13px;margin-top:10px}
+
+.method{margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.mcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.mcard .mn{font-family:'Anuphan',sans-serif;font-weight:700;font-size:13px;color:var(--primary);margin-bottom:3px}
+.mcard h4{font-size:14.5px;font-weight:700;margin-bottom:4px}
+.mcard p{font-size:12.8px;color:var(--muted)}
+
+footer{margin:22px 0 34px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+footer b{color:var(--ink)}
+
+@media (max-width:940px){
+  .main,.compgrid,.datapanel .cols{grid-template-columns:1fr}
+  .summary{grid-template-columns:repeat(2,1fr)}
+  .method{grid-template-columns:1fr}
+  .statrow{grid-template-columns:repeat(3,1fr)}
+  .bar{grid-template-columns:118px 1fr 32px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap topbar">
+    <div class="brand">
+      <div class="mark">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <circle cx="13" cy="13" r="11" stroke="#fff" stroke-width="1.6" opacity=".9"/>
+          <circle cx="13" cy="13" r="6.5" stroke="#fff" stroke-width="1.6" opacity=".65"/>
+          <circle cx="13" cy="13" r="2.4" fill="#F3C64B"/>
+          <line x1="13" y1="2" x2="13" y2="7" stroke="#fff" stroke-width="1.6" opacity=".9"/>
+        </svg>
+      </div>
+      <div>
+        <h1>ระบบสารสนเทศแผนที่ความเสี่ยง C-RADAR-FV</h1>
+        <p>ศูนย์รวมผู้เชี่ยวชาญด้านการป้องกันและตอบสนองต่อความรุนแรงในครอบครัว</p>
+      </div>
+    </div>
+    <span class="demo-badge">ระบบต้นแบบเพื่อการสาธิต รุ่นที่ 2</span>
+  </div>
+</header>
+<div class="notice">
+  <div class="wrap">
+    <span>หมายเหตุสำคัญ</span>
+    <span>ข้อมูลจำนวนกรณี คะแนน และข้อคิดเห็นทั้งหมดในระบบนี้เป็นข้อมูลสมมุติที่จัดทำขึ้นเพื่อแสดงแนวคิดและความเป็นไปได้ของเครื่องมือเท่านั้น มิใช่ข้อมูลสถานการณ์จริงของพื้นที่ใด การแสดงผลจำกัดที่ระดับตำบล โดยไม่ระบุครัวเรือนหรือตัวบุคคล</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="controls">
+    <div class="tabs">
+      <button id="tab-muang" class="active" onclick="setDistrict('muang')">อำเภอเมืองขอนแก่น</button>
+      <button id="tab-namphong" onclick="setDistrict('namphong')">อำเภอน้ำพอง</button>
+    </div>
+    <div class="chips">
+      <button class="chip on" data-tier="all" onclick="setFilter('all',this)">ทุกระดับ</button>
+      <button class="chip" data-tier="r" onclick="setFilter('r',this)"><span class="dot" style="background:var(--red)"></span>สีแดง</button>
+      <button class="chip" data-tier="y" onclick="setFilter('y',this)"><span class="dot" style="background:var(--amber)"></span>สีเหลือง</button>
+      <button class="chip" data-tier="g" onclick="setFilter('g',this)"><span class="dot" style="background:var(--green)"></span>สีเขียว</button>
+    </div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="main">
+    <div class="panel">
+      <h2 id="map-title"></h2>
+      <p class="hint">เลือกตำบลจากแผนภาพเพื่อแสดงข้อมูลบริบท คะแนนรายมิติ ปัจจัยขับเคลื่อนความเสี่ยง และชุดมาตรการจำเพาะพื้นที่ ใต้ชื่อแต่ละตำบลแสดงปัจจัยขับเคลื่อนหลักโดยย่อ</p>
+      <div class="mapgrid" id="mapgrid"></div>
+      <div class="maplegend">
+        <span><i style="background:var(--green)"></i>สีเขียว เฝ้าระวังตามระบบปกติ (ต่ำกว่า 40)</span>
+        <span><i style="background:var(--amber)"></i>สีเหลือง เฝ้าระวังและมาตรการเชิงรุก (40 ถึง 64)</span>
+        <span><i style="background:var(--red)"></i>สีแดง มาตรการเร่งด่วนและเข้มข้น (65 ขึ้นไป)</span>
+      </div>
+      <p class="mapnote">แผนภาพนี้แสดงตำแหน่งของตำบลโดยสังเขปเพื่อประโยชน์ในการสาธิต มิใช่แผนที่ภูมิศาสตร์ตามมาตราส่วนจริง ในระบบจริงจะแสดงผลบนแผนที่ขอบเขตการปกครองผ่านระบบสารสนเทศภูมิศาสตร์</p>
+    </div>
+
+    <div class="panel" id="detail"></div>
+  </div>
+
+  <div class="panel datapanel">
+    <h2>สถานะข้อมูลสถานการณ์จริงและเหตุผลของการนำร่อง</h2>
+    <div class="cols">
+      <div class="dcol">
+        <h4>ข้อมูลจริงที่มีอยู่ในปัจจุบัน</h4>
+        <ul>
+          <li>สถิติความรุนแรงในครอบครัวจำแนกรายจังหวัด จัดทำโดยกรมกิจการสตรีและสถาบันครอบครัว กระทรวงการพัฒนาสังคมและความมั่นคงของมนุษย์</li>
+          <li>ข้อมูลผู้เข้ารับบริการศูนย์พึ่งได้ กระทรวงสาธารณสุข ระดับประเทศ ซึ่งในปี 2567 มีผู้ถูกกระทำความรุนแรงเข้ารับบริการมากกว่า 17,000 ราย โดยส่วนใหญ่เป็นผู้หญิง</li>
+          <li>งานวิจัยย้อนหลัง 10 ปีของศูนย์พึ่งได้โรงพยาบาลขอนแก่น เกี่ยวกับรูปแบบการบริการเด็กและผู้หญิงที่ถูกกระทำรุนแรง</li>
+          <li>ข้อมูลสายด่วน 1300 สถิติคดีของสำนักงานตำรวจแห่งชาติ และข้อมูลความจำเป็นพื้นฐานระดับพื้นที่</li>
+        </ul>
+      </div>
+      <div class="dcol">
+        <h4>ช่องว่างของข้อมูลที่ศูนย์ฯ จะเติมเต็ม</h4>
+        <ul>
+          <li>ยังไม่มีข้อมูลความรุนแรงในครอบครัวจำแนกรายตำบลที่เผยแพร่ต่อสาธารณะหรือเชื่อมโยงข้ามหน่วยงานอย่างเป็นระบบ</li>
+          <li>ข้อมูลที่มีอยู่กระจายตามหน่วยงานเจ้าของข้อมูล ทั้งด้านสาธารณสุข ตำรวจ และการพัฒนาสังคม โดยยังไม่มีกลไกบูรณาการเชิงพื้นที่</li>
+          <li>ข้อมูลเหตุการณ์ที่รายงานสะท้อนเพียงส่วนหนึ่งของสถานการณ์จริง เนื่องจากผู้ถูกกระทำจำนวนมากไม่เข้าสู่ระบบบริการ เครื่องมือจึงต้องประเมินปัจจัยแวดล้อมร่วมด้วย มิใช่อาศัยจำนวนกรณีที่รายงานเพียงอย่างเดียว</li>
+        </ul>
+      </div>
+    </div>
+    <div class="keypoint">ด้วยเหตุนี้ การดำเนินงานปีที่ 1 จึงกำหนดให้ทดสอบความเป็นไปได้ของการรวบรวมข้อมูล การประมวลผล การแปลผล และการนำผลไปใช้ในพื้นที่นำร่อง 2 อำเภอ ภายใต้บันทึกข้อตกลงความร่วมมือระดับกระทรวงหรือกรม ซึ่งเป็นเงื่อนไขที่ทำให้การเข้าถึงข้อมูลข้ามหน่วยงานเป็นไปได้อย่างถูกต้องตามหลักธรรมาภิบาลข้อมูล</div>
+  </div>
+
+  <div class="panel compare">
+    <h2>การเปรียบเทียบพื้นที่นำร่องสองบริบท</h2>
+    <p class="hint">การเลือกพื้นที่ที่มีบริบทแตกต่างกันช่วยให้สามารถประเมินความเป็นไปได้ของเครื่องมือภายใต้เงื่อนไขที่หลากหลาย ก่อนพิจารณาขยายผลในระยะต่อไป</p>
+    <div class="compgrid" id="compgrid"></div>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <h2>ตรรกะการจับคู่ปัจจัยขับเคลื่อนกับมาตรการ</h2>
+    <p class="hint">ระบบวิเคราะห์คะแนนรายมิติของแต่ละตำบล มิติใดมีคะแนนความจำเป็นตั้งแต่ 55 ขึ้นไปจะถูกระบุเป็นปัจจัยขับเคลื่อนหลัก และเชื่อมโยงกับชุดมาตรการจำเพาะของมิตินั้นโดยอัตโนมัติ ข้อเสนอจากระบบเป็นเพียงร่างตั้งต้น ซึ่งคณะที่ปรึกษาชุมชนจะพิจารณา ปรับ และรับรองก่อนนำไปปฏิบัติ</p>
+    <div class="method">
+      <div class="mcard"><div class="mn">มิติที่ 1 บริบทชุมชนมีคะแนนสูง</div><h4>มาตรการด้านสภาพแวดล้อมและบรรทัดฐาน</h4><p>กำกับดูแลจุดจำหน่ายสุราร่วมกับองค์กรปกครองส่วนท้องถิ่นและคณะกรรมการควบคุมเครื่องดื่มแอลกอฮอล์ระดับอำเภอ และสื่อสารปรับบรรทัดฐานทางสังคมผ่านผู้นำชุมชนและศูนย์พัฒนาครอบครัวในชุมชน</p></div>
+      <div class="mcard"><div class="mn">มิติที่ 2 ความเสี่ยงและอุบัติการณ์สูง</div><h4>มาตรการด้านการจัดการกรณีและการส่งต่อ</h4><p>ประชุมทบทวนกรณีร่วมสหวิชาชีพระหว่างศูนย์พึ่งได้ สถานีตำรวจ และหน่วยงานพัฒนาสังคม โดยเน้นกรณีที่เกิดซ้ำ พร้อมระบบติดตามความปลอดภัยภายหลังการช่วยเหลือ</p></div>
+      <div class="mcard"><div class="mn">มิติที่ 3 การเข้าถึงบริการยาก</div><h4>มาตรการด้านช่องทางเข้าถึงความช่วยเหลือ</h4><p>ส่งเสริมแอปพลิเคชัน WeSafe และระบบสนทนาอัตโนมัติเป็นช่องทางทางไกล ประสานองค์กรปกครองส่วนท้องถิ่นจัดระบบรับส่งกรณีฉุกเฉิน และพิจารณาหน่วยบริการเชิงรุก</p></div>
+      <div class="mcard"><div class="mn">มิติที่ 4 ความเปราะบางของประชากรสูง</div><h4>มาตรการด้านการดูแลกลุ่มเปราะบาง</h4><p>จัดระบบเยี่ยมบ้านครัวเรือนกลุ่มเปราะบางโดยอาสาสมัครสาธารณสุขประจำหมู่บ้านที่ผ่านการอบรมหลักสูตร LIVES และเชื่อมโยงสวัสดิการผ่านสายด่วน 1300 และนักสังคมสงเคราะห์</p></div>
+      <div class="mcard"><div class="mn">มิติที่ 5 ศักยภาพของชุมชนจำกัด</div><h4>มาตรการด้านการเสริมกำลังชุมชน</h4><p>อบรมหลักสูตร LIVES ฉบับบริบทไทยแก่อาสาสมัครสาธารณสุขประจำหมู่บ้านและแกนนำชุมชน พัฒนาครูผู้ฝึกอบรมประจำพื้นที่ และฟื้นฟูหรือจัดตั้งเครือข่ายเฝ้าระวังระดับหมู่บ้าน</p></div>
+      <div class="mcard"><div class="mn">มิติที่ 6 ทรัพยากรของระบบบริการจำกัด</div><h4>มาตรการด้านการเสริมระบบบริการ</h4><p>อบรมหลักสูตร LIVES แก่บุคลากรโรงพยาบาลส่งเสริมสุขภาพตำบลและหน่วยบริการปฐมภูมิ และสนับสนุนข้อมูลแก่องค์กรปกครองส่วนท้องถิ่นเพื่อจัดทำข้อบัญญัติงบประมาณด้านการคุ้มครองครอบครัว</p></div>
+    </div>
+    <p class="rev-note">คะแนนทุกมิติปรับทิศทางให้ค่าสูงหมายถึงความจำเป็นในการดำเนินมาตรการสูง โดยมิติที่ 5 และมิติที่ 6 ใช้คะแนนแบบกลับด้าน กล่าวคือ ศักยภาพหรือทรัพยากรที่ต่ำจะแปลงเป็นคะแนนความจำเป็นที่สูง เกณฑ์คะแนน 55 เป็นค่าตั้งต้นเพื่อการสาธิต เกณฑ์จริงจะกำหนดผ่านกระบวนการผู้เชี่ยวชาญแบบ Modified Delphi ในปีที่ 1</p>
+  </div>
+
+  <footer>
+    <b>ระบบต้นแบบเพื่อการสาธิตประกอบข้อเสนอโครงการศูนย์รวมผู้เชี่ยวชาญด้านการป้องกันและตอบสนองต่อความรุนแรงในครอบครัว</b><br>
+    เสนอต่อสำนักงานการวิจัยแห่งชาติ โดยวิทยาลัยพยาบาลบรมราชชนนี ขอนแก่น คณะพยาบาลศาสตร์ สถาบันพระบรมราชชนก<br>
+    จำนวนกรณี คะแนน บริบทพื้นที่ และข้อคิดเห็นทั้งหมดเป็นข้อมูลสมมุติเพื่อการสาธิต เครื่องมือฉบับจริงจะพัฒนาและตรวจสอบคุณภาพในปีที่ 1 ตามกระบวนการที่ระบุในข้อเสนอโครงการ การแสดงผลจำกัดที่ระดับตำบลเท่านั้นตามมาตรการคุ้มครองข้อมูลส่วนบุคคล
+  </footer>
+
+</div>
+
+<script>
+/* ── ข้อมูลสมมุติเพื่อการสาธิต ──
+   dims: [บริบทชุมชน, ความเสี่ยงและอุบัติการณ์, การเข้าถึงบริการ, ความเปราะบาง, ศักยภาพชุมชน(กลับด้าน), ทรัพยากรระบบ(กลับด้าน)]
+   pop: ประชากรโดยประมาณ (สมมุติ)  cases: จำนวนกรณีที่รายงานต่อปี (สมมุติ) */
+const DIMS_SHORT = ["บริบทชุมชน","ความเสี่ยงและอุบัติการณ์","การเข้าถึงบริการ","ความเปราะบางของประชากร","ศักยภาพของชุมชน","ทรัพยากรของระบบบริการ"];
+const DRIVER_THRESHOLD = 55;
+
+/* ห้องสมุดมาตรการจำเพาะรายมิติ */
+const DIM_MEASURES = [
+  { name:"มาตรการด้านสภาพแวดล้อมและบรรทัดฐานของชุมชน", items:[
+    {t:"กำกับดูแลความหนาแน่นของจุดจำหน่ายสุราและการจำหน่ายนอกเวลาที่กฎหมายกำหนด ร่วมกับองค์กรปกครองส่วนท้องถิ่นและคณะกรรมการควบคุมเครื่องดื่มแอลกอฮอล์ระดับอำเภอ", w:"ตอบสนองต่อคะแนนบริบทชุมชนที่สูง ซึ่งสะท้อนความหนาแน่นของจุดจำหน่ายสุราและความตึงเครียดทางเศรษฐกิจ"},
+    {t:"สื่อสารปรับบรรทัดฐานทางสังคมผ่านผู้นำชุมชน ผู้นำศาสนา และกิจกรรมของศูนย์พัฒนาครอบครัวในชุมชน โดยเน้นสาระว่าความรุนแรงในครอบครัวมิใช่เรื่องส่วนตัวและทุกคนมีบทบาทช่วยเหลือได้", w:"ปรับเปลี่ยนบรรทัดฐานที่ยอมรับความรุนแรง ซึ่งเป็นปัจจัยรากของมิติบริบทชุมชน"}
+  ]},
+  { name:"มาตรการด้านการจัดการกรณีและเส้นทางการส่งต่อ", items:[
+    {t:"จัดประชุมทบทวนกรณีร่วมสหวิชาชีพระหว่างศูนย์พึ่งได้ สถานีตำรวจ และสำนักงานพัฒนาสังคมและความมั่นคงของมนุษย์จังหวัด โดยให้ความสำคัญกับกรณีที่เกิดซ้ำ", w:"ตอบสนองต่ออุบัติการณ์ที่สูงและสัดส่วนกรณีเกิดซ้ำ ซึ่งบ่งชี้ช่องว่างของการติดตาม"},
+    {t:"จัดระบบติดตามความปลอดภัยของผู้ถูกกระทำภายหลังการช่วยเหลือ ร่วมกับโรงพยาบาลส่งเสริมสุขภาพตำบลในพื้นที่ ตามความสมัครใจของผู้ถูกกระทำ", w:"ลดโอกาสการถูกกระทำซ้ำ ซึ่งเป็นตัวชี้วัดหลักของมิติความเสี่ยง"}
+  ]},
+  { name:"มาตรการด้านช่องทางการเข้าถึงความช่วยเหลือ", items:[
+    {t:"ส่งเสริมแอปพลิเคชัน WeSafe และระบบสนทนาอัตโนมัติเป็นช่องทางประเมินความเสี่ยงและขอความช่วยเหลือทางไกล สำหรับประชาชนที่อยู่ห่างจากหน่วยบริการหรือไม่สะดวกเดินทาง", w:"เทคโนโลยีช่วยลดอุปสรรคด้านระยะทางและความเป็นส่วนตัว ซึ่งเป็นตัวชี้วัดหลักของมิติการเข้าถึงบริการ"},
+    {t:"ประสานองค์กรปกครองส่วนท้องถิ่นจัดระบบรับส่งกรณีฉุกเฉิน และพิจารณาจัดหน่วยบริการเชิงรุกร่วมกับโรงพยาบาลแม่ข่ายตามรอบเวลาที่เหมาะสม", w:"แก้ไขอุปสรรคการเดินทางถึงศูนย์พึ่งได้ สถานีตำรวจ และบ้านพักฉุกเฉินโดยตรง"}
+  ]},
+  { name:"มาตรการด้านการดูแลกลุ่มประชากรเปราะบาง", items:[
+    {t:"จัดระบบเยี่ยมบ้านครัวเรือนกลุ่มเปราะบาง อาทิ ครัวเรือนรายได้น้อย หญิงตั้งครรภ์วัยรุ่น และผู้สูงอายุที่อยู่ลำพัง โดยอาสาสมัครสาธารณสุขประจำหมู่บ้านที่ผ่านการอบรมหลักสูตร LIVES", w:"เข้าถึงกลุ่มที่มีความเสี่ยงสูงแต่มักไม่เข้าสู่ระบบบริการด้วยตนเอง"},
+    {t:"เชื่อมโยงครัวเรือนที่ประสบปัญหากับสวัสดิการของกระทรวงการพัฒนาสังคมและความมั่นคงของมนุษย์ ผ่านสายด่วน 1300 และนักสังคมสงเคราะห์ในพื้นที่", w:"ลดความตึงเครียดทางเศรษฐกิจซึ่งเป็นปัจจัยเสี่ยงร่วมของความรุนแรงในครอบครัว"}
+  ]},
+  { name:"มาตรการด้านการเสริมกำลังกลไกชุมชน", items:[
+    {t:"จัดอบรมหลักสูตร LIVES ฉบับบริบทไทยแก่อาสาสมัครสาธารณสุขประจำหมู่บ้านและแกนนำชุมชน พร้อมพัฒนาครูผู้ฝึกอบรมประจำพื้นที่เพื่อให้ขยายผลได้ด้วยตนเอง", w:"เพิ่มจำนวนผู้ปฏิบัติงานด่านหน้าที่สามารถรับฟัง สื่อสาร และส่งต่ออย่างปลอดภัย ในพื้นที่ที่กลไกชุมชนยังจำกัด"},
+    {t:"ฟื้นฟูหรือจัดตั้งเครือข่ายเฝ้าระวังความรุนแรงระดับหมู่บ้าน ร่วมกับศูนย์พัฒนาครอบครัวในชุมชนและคณะกรรมการหมู่บ้าน", w:"สร้างกลไกถาวรของชุมชนเอง มิใช่พึ่งพาหน่วยงานภายนอกเพียงอย่างเดียว"}
+  ]},
+  { name:"มาตรการด้านการเสริมขีดความสามารถของระบบบริการ", items:[
+    {t:"จัดอบรมหลักสูตร LIVES แก่บุคลากรโรงพยาบาลส่งเสริมสุขภาพตำบลและหน่วยบริการปฐมภูมิในพื้นที่ เพื่อให้การตอบสนองด่านแรกมีคุณภาพสม่ำเสมอ", w:"แก้ไขข้อจำกัดด้านจำนวนบุคลากรที่ผ่านการอบรม ซึ่งเป็นตัวชี้วัดหลักของมิติทรัพยากรระบบ"},
+    {t:"สนับสนุนข้อมูลสถานการณ์แก่องค์กรปกครองส่วนท้องถิ่น เพื่อประกอบการจัดทำข้อบัญญัติงบประมาณด้านการคุ้มครองครอบครัวและการเสริมอัตรากำลังสนับสนุนศูนย์พึ่งได้", w:"สร้างความยั่งยืนด้านงบประมาณจากกลไกท้องถิ่น"}
+  ]}
+];
+
+const TIER_BASE = {
+  r: {title:"มาตรการพื้นฐานระดับสีแดง", items:[
+    "บรรจุพื้นที่ในลำดับความสำคัญสูงสุดของแผนปฏิบัติการปีที่ 1 และติดตามสถานการณ์รายไตรมาสร่วมกับคณะที่ปรึกษาชุมชน",
+    "จัดประชุมประสานการดำเนินงานระหว่างหน่วยงานที่เกี่ยวข้องในพื้นที่ เพื่อทบทวนเส้นทางการส่งต่อให้เป็นปัจจุบัน"
+  ]},
+  y: {title:"มาตรการพื้นฐานระดับสีเหลือง", items:[
+    "เฝ้าระวังเชิงรุกโดยอาสาสมัครสาธารณสุขประจำหมู่บ้านและแกนนำชุมชน พร้อมทบทวนข้อมูลและระดับความเสี่ยงทุก 6 เดือน",
+    "ประชาสัมพันธ์ช่องทางการขอความช่วยเหลือ รวมถึงแอปพลิเคชัน WeSafe และสายด่วน 1300"
+  ]},
+  g: {title:"มาตรการพื้นฐานระดับสีเขียว", items:[
+    "เฝ้าระวังตามระบบปกติของหน่วยบริการสุขภาพและเครือข่ายชุมชน พร้อมสื่อสารความรู้เพื่อการป้องกัน",
+    "ทบทวนข้อมูลรายปีตามวงจรการพัฒนาคุณภาพ PDCA"
+  ]}
+};
+
+const DATA = {
+  muang: {
+    name: "อำเภอเมืองขอนแก่น จังหวัดขอนแก่น",
+    context: "พื้นที่เมืองขนาดใหญ่ ประชากรหนาแน่น โครงสร้างบริการหลายระดับและซับซ้อน",
+    cols: 5, rows: 5,
+    tambons: [
+      {n:"โนนท่อน", c:2,r:0, d:[30,28,40,34,32,28], pop:7000, cases:2,
+        profile:"ชุมชนเกษตรกรรมขนาดเล็ก ประชากรคงที่ ความผูกพันทางสังคมสูง",
+        codesign:"draft"},
+      {n:"สำราญ", c:3,r:0, d:[50,46,42,52,46,44], pop:12000, cases:7,
+        profile:"ชุมชนกึ่งเมืองริมเส้นทางหลักสายมิตรภาพ ประชากรแฝงจากแรงงานรับจ้าง",
+        codesign:"draft"},
+      {n:"โคกสี", c:4,r:0, d:[36,34,46,42,38,34], pop:9000, cases:3,
+        profile:"ชุมชนเกษตรกรรม ใกล้ท่าอากาศยานขอนแก่น พื้นที่บางส่วนอยู่ห่างหน่วยบริการ",
+        codesign:"draft"},
+      {n:"บ้านค้อ", c:1,r:1, d:[38,34,46,44,40,34], pop:15000, cases:5,
+        profile:"ชุมชนเกษตรกรรมผสมที่อยู่อาศัยชานเมืองตอนเหนือ",
+        codesign:"draft"},
+      {n:"ศิลา", c:3,r:1, d:[62,58,44,60,58,64], pop:42000, cases:31,
+        profile:"เขตขยายตัวของเมืองตอนเหนือ ที่ตั้งสถาบันอุดมศึกษาและหอพักนักศึกษาจำนวนมาก ประชากรแฝงสูง ความผูกพันชุมชนดั้งเดิมลดลง",
+        special:{t:"ร่วมกับสถาบันอุดมศึกษาและเครือข่ายผู้ประกอบการหอพัก สื่อสารความรู้เรื่องความรุนแรงในคู่และช่องทางแอปพลิเคชัน WeSafe แก่นักศึกษาและประชากรวัยทำงานตอนต้น ซึ่งเป็นกลุ่มที่มักไม่เข้าถึงกลไกชุมชนแบบดั้งเดิม", w:"บริบทจำเพาะ ประชากรแฝงวัยหนุ่มสาวจำนวนมากที่อยู่นอกทะเบียนชุมชน"},
+        codesign:"reviewing"},
+      {n:"หนองตูม", c:4,r:1, d:[34,32,44,40,36,32], pop:7000, cases:2,
+        profile:"ชุมชนเกษตรกรรมขนาดเล็กด้านตะวันออกเฉียงเหนือของอำเภอ",
+        codesign:"draft"},
+      {n:"สาวะถี", c:0,r:2, d:[42,40,52,48,42,40], pop:20000, cases:9,
+        profile:"ชุมชนชนบทด้านตะวันตก มีทุนวัฒนธรรมชุมชนเข้มแข็ง แต่บางหมู่บ้านอยู่ไกลหน่วยบริการ",
+        codesign:"draft"},
+      {n:"แดงใหญ่", c:1,r:2, d:[52,50,50,56,52,52], pop:8000, cases:6,
+        profile:"ชุมชนกึ่งชนบทด้านตะวันตก ครัวเรือนเปราะบางกระจุกตัวในบางหมู่บ้าน",
+        codesign:"draft"},
+      {n:"บ้านเป็ด", c:2,r:2, d:[66,62,40,62,64,68], pop:38000, cases:29,
+        profile:"เขตชานเมืองที่ขยายตัวเร็วที่สุด หมู่บ้านจัดสรรจำนวนมาก ประชากรย้ายถิ่นเข้าสูง ความสัมพันธ์เพื่อนบ้านต่ำ กลไกเฝ้าระวังดั้งเดิมครอบคลุมไม่ทันการขยายตัว",
+        special:{t:"สร้างเครือข่ายเฝ้าระวังรูปแบบใหม่ในหมู่บ้านจัดสรร โดยประสานผ่านนิติบุคคลหมู่บ้านและคณะกรรมการหมู่บ้าน พร้อมอบรมตัวแทนหมู่บ้านจัดสรรด้วยหลักสูตร LIVES ฉบับย่อสำหรับประชาชน", w:"บริบทจำเพาะ กลไก อสม. แบบดั้งเดิมเข้าไม่ถึงหมู่บ้านจัดสรรปิด ต้องออกแบบกลไกใหม่ร่วมกับชุมชน"},
+        codesign:"reviewing"},
+      {n:"ในเมือง", c:3,r:2, d:[80,76,34,74,74,78], pop:120000, cases:118,
+        profile:"เขตเทศบาลนครขอนแก่น ประชากรหนาแน่นที่สุดของจังหวัด มีทั้งชุมชนแออัด หอพัก คอนโดมิเนียม และย่านสถานบันเทิง ความหลากหลายทางเศรษฐกิจและสังคมสูงมาก การเข้าถึงบริการสะดวกแต่จำนวนกรณีสูงและกลไกชุมชนครอบคลุมประชากรแฝงได้จำกัด",
+        special:{t:"จัดทำแผนย่อยรายชุมชนร่วมกับเทศบาลนครขอนแก่น โดยจำแนกชุมชนแออัดที่ขึ้นทะเบียนกับเทศบาล และประสานเครือข่ายหอพักและสถานประกอบการย่านสถานบันเทิง เพื่อสื่อสารช่องทางแอปพลิเคชัน WeSafe และจุดให้บริการของศูนย์พึ่งได้โรงพยาบาลขอนแก่น", w:"บริบทจำเพาะ พื้นที่เดียวมีหลายบริบทย่อย ระดับตำบลยังหยาบเกินไป จำเป็นต้องวางแผนระดับชุมชนร่วมกับเทศบาล"},
+        codesign:"adopted"},
+      {n:"บึงเนียม", c:4,r:2, d:[42,40,48,44,40,38], pop:7000, cases:3,
+        profile:"ชุมชนเกษตรกรรมริมบึงด้านตะวันออก",
+        codesign:"draft"},
+      {n:"บ้านทุ่ม", c:0,r:3, d:[48,46,52,52,48,48], pop:15000, cases:8,
+        profile:"ชุมชนตลาดเก่าด้านตะวันตก ผสมเกษตรกรรมและการค้า",
+        codesign:"draft"},
+      {n:"บ้านหว้า", c:1,r:3, d:[40,38,48,46,40,36], pop:11000, cases:4,
+        profile:"ชุมชนเกษตรกรรมด้านตะวันตกเฉียงใต้",
+        codesign:"draft"},
+      {n:"เมืองเก่า", c:3,r:3, d:[58,54,42,58,56,60], pop:30000, cases:20,
+        profile:"เขตต่อเมืองด้านใต้ ประชากรหนาแน่น มีชุมชนริมทางรถไฟและครัวเรือนรายได้น้อยกระจุกตัว",
+        special:{t:"จัดกิจกรรมเชิงรุกในชุมชนริมทางรถไฟร่วมกับนักสังคมสงเคราะห์เทศบาลและอาสาสมัครพัฒนาสังคมและความมั่นคงของมนุษย์ โดยเชื่อมโยงสวัสดิการครัวเรือนควบคู่กับการเฝ้าระวังความรุนแรง", w:"บริบทจำเพาะ ความเปราะบางกระจุกตัวเชิงพื้นที่ชัดเจน เหมาะกับมาตรการเจาะจงรายชุมชน"},
+        codesign:"draft"},
+      {n:"พระลับ", c:4,r:3, d:[70,68,44,68,66,70], pop:25000, cases:24,
+        profile:"เขตต่อเมืองด้านตะวันออก ขยายตัวเร็ว ประชากรย้ายถิ่นและแรงงานรับจ้างหนาแน่น กลไกชุมชนยังไม่ทันการเปลี่ยนแปลง",
+        special:{t:"พัฒนาแกนนำเฝ้าระวังจากกลุ่มแรงงานย้ายถิ่นโดยตรง โดยอบรมหลักสูตร LIVES ฉบับประชาชนแก่ตัวแทนกลุ่มแรงงานและผู้ประกอบการห้องเช่า พร้อมสื่อสารแอปพลิเคชัน WeSafe เป็นช่องทางหลักสำหรับประชากรที่ไม่มีทะเบียนบ้านในพื้นที่", w:"บริบทจำเพาะ ประชากรแฝงเข้าไม่ถึง อสม. ตามภูมิลำเนา ต้องใช้ช่องทางดิจิทัลและแกนนำจากกลุ่มเดียวกัน"},
+        codesign:"reviewing"},
+      {n:"ดอนช้าง", c:1,r:4, d:[32,30,44,38,32,28], pop:6500, cases:2,
+        profile:"ชุมชนเกษตรกรรมขนาดเล็กด้านตะวันตกเฉียงใต้",
+        codesign:"draft"},
+      {n:"ดอนหัน", c:2,r:4, d:[36,32,46,42,38,32], pop:10000, cases:4,
+        profile:"ชุมชนเกษตรกรรมด้านใต้ของอำเภอ",
+        codesign:"draft"},
+      {n:"ท่าพระ", c:3,r:4, d:[64,62,46,64,62,66], pop:20000, cases:17,
+        profile:"ชุมชนกึ่งอุตสาหกรรมด้านใต้ ที่ตั้งย่านโรงงานและสถานีรถไฟท่าพระ แรงงานโรงงานจำนวนมาก ความตึงเครียดทางเศรษฐกิจผันผวนตามภาวะการจ้างงาน",
+        special:{t:"ประสานสถานประกอบการในพื้นที่ จัดอบรมหลักสูตร LIVES ฉบับย่อแก่เจ้าหน้าที่ฝ่ายบุคคลและเจ้าหน้าที่ความปลอดภัยในการทำงาน เพื่อให้สถานประกอบการเป็นจุดตรวจพบและส่งต่อสำหรับแรงงาน พร้อมเผยแพร่แอปพลิเคชัน WeSafe ผ่านช่องทางสื่อสารภายในองค์กร", w:"บริบทจำเพาะ แรงงานโรงงานใช้เวลาส่วนใหญ่ในสถานประกอบการ ที่ทำงานจึงเป็นจุดตรวจพบที่มีศักยภาพสูง"},
+        codesign:"reviewing"}
+    ]
+  },
+  namphong: {
+    name: "อำเภอน้ำพอง จังหวัดขอนแก่น",
+    context: "พื้นที่กึ่งชนบท มีโรงพยาบาลน้ำพองเป็นหน่วยบริการหลัก และเครือข่ายศูนย์พึ่งได้ที่มีความพร้อม",
+    cols: 5, rows: 4,
+    tambons: [
+      {n:"บ้านขาม", c:1,r:0, d:[36,34,44,42,34,32], pop:9000, cases:3,
+        profile:"ชุมชนเกษตรกรรมตอนเหนือของอำเภอ",
+        codesign:"draft"},
+      {n:"ทรายมูล", c:2,r:0, d:[32,30,42,38,30,26], pop:7000, cases:2,
+        profile:"ชุมชนเกษตรกรรมขนาดเล็ก ความผูกพันทางสังคมสูง",
+        codesign:"draft"},
+      {n:"บัวเงิน", c:3,r:0, d:[40,38,50,46,38,34], pop:11000, cases:4,
+        profile:"ชุมชนเกษตรกรรมด้านตะวันออกเฉียงเหนือ บางหมู่บ้านอยู่ไกลหน่วยบริการ",
+        codesign:"draft"},
+      {n:"พังทุย", c:0,r:1, d:[28,26,42,34,26,22], pop:6000, cases:1,
+        profile:"ชุมชนเกษตรกรรมขนาดเล็กด้านตะวันตกเฉียงเหนือ",
+        codesign:"draft"},
+      {n:"น้ำพอง", c:2,r:1, d:[72,70,38,66,68,74], pop:18000, cases:19,
+        profile:"ที่ตั้งเขตอุตสาหกรรมหลักของอำเภอ ทั้งอุตสาหกรรมน้ำตาลและเยื่อกระดาษ แรงงานประจำและแรงงานตามฤดูกาลหีบอ้อยจำนวนมาก ความตึงเครียดทางเศรษฐกิจผันผวนตามฤดูการผลิต เป็นที่ตั้งโรงพยาบาลน้ำพองซึ่งผู้อำนวยการดำรงตำแหน่งประธานศูนย์พึ่งได้จังหวัดขอนแก่น",
+        special:{t:"ใช้โรงพยาบาลน้ำพองเป็นฐานพัฒนาต้นแบบเส้นทางการส่งต่อระดับอำเภอ พร้อมประสานสถานประกอบการอุตสาหกรรมจัดอบรมหลักสูตร LIVES ฉบับย่อแก่เจ้าหน้าที่ฝ่ายบุคคลและหัวหน้างาน โดยให้ความสำคัญกับช่วงฤดูหีบอ้อยซึ่งแรงงานตามฤดูกาลหนาแน่น และเผยแพร่แอปพลิเคชัน WeSafe แก่แรงงานผ่านช่องทางของสถานประกอบการ", w:"บริบทจำเพาะ จุดแข็งด้านภาวะผู้นำของศูนย์พึ่งได้ในพื้นที่ ประกอบกับความเสี่ยงจำเพาะของประชากรแรงงานอุตสาหกรรมและแรงงานตามฤดูกาล"},
+        codesign:"adopted"},
+      {n:"บัวใหญ่", c:3,r:1, d:[34,32,44,40,32,28], pop:9000, cases:3,
+        profile:"ชุมชนเกษตรกรรมริมลำน้ำพอง",
+        codesign:"draft"},
+      {n:"ท่ากระเสริม", c:4,r:1, d:[30,28,44,36,28,24], pop:7000, cases:2,
+        profile:"ชุมชนเกษตรกรรมริมลำน้ำด้านตะวันออก",
+        codesign:"draft"},
+      {n:"สะอาด", c:1,r:2, d:[38,34,46,42,36,32], pop:8000, cases:3,
+        profile:"ชุมชนเกษตรกรรมด้านตะวันตก ใกล้เขื่อนอุบลรัตน์",
+        codesign:"draft"},
+      {n:"วังชัย", c:2,r:2, d:[56,52,42,56,54,58], pop:13000, cases:9,
+        profile:"ชุมชนตลาดและย่านการค้าหลักของอำเภอ ที่ตั้งเทศบาลตำบลวังชัย ประชากรสัญจรหนาแน่น",
+        special:{t:"จัดจุดสื่อสารและให้ข้อมูลในตลาดสดและย่านการค้า ร่วมกับเทศบาลตำบลวังชัย โดยฝึกอบรมผู้นำกลุ่มแม่ค้าและกลุ่มออมทรัพย์เป็นแกนนำเฝ้าระวังและแนะนำช่องทางขอความช่วยเหลือ", w:"บริบทจำเพาะ ย่านตลาดเป็นจุดรวมของประชาชนหลากหลายกลุ่ม กลุ่มการค้าสตรีมีศักยภาพเป็นเครือข่ายเฝ้าระวังตามธรรมชาติ"},
+        codesign:"reviewing"},
+      {n:"หนองกุง", c:3,r:2, d:[60,58,44,60,58,62], pop:12000, cases:10,
+        profile:"ชุมชนรอบเขตอุตสาหกรรมด้านใต้ของอำเภอ รองรับแรงงานและครอบครัวที่ย้ายถิ่นเข้ามาทำงาน ที่พักอาศัยแบบห้องเช่าหนาแน่น",
+        special:{t:"พัฒนาแกนนำเฝ้าระวังจากผู้ประกอบการห้องเช่าและตัวแทนชุมชนแรงงาน พร้อมจัดกิจกรรมครอบครัวสัมพันธ์ร่วมกับศูนย์พัฒนาครอบครัวในชุมชนสำหรับครอบครัวแรงงานย้ายถิ่น", w:"บริบทจำเพาะ ครอบครัวแรงงานย้ายถิ่นขาดเครือข่ายทางสังคมรองรับ ซึ่งเป็นปัจจัยเสี่ยงและอุปสรรคการขอความช่วยเหลือ"},
+        codesign:"reviewing"},
+      {n:"ม่วงหวาน", c:1,r:3, d:[46,44,50,50,44,42], pop:10000, cases:5,
+        profile:"ชุมชนกึ่งชนบทด้านใต้ ติดต่อกับเขตอุตสาหกรรมน้ำพอง",
+        codesign:"draft"},
+      {n:"กุดน้ำใส", c:2,r:3, d:[44,42,48,46,42,38], pop:9000, cases:4,
+        profile:"ชุมชนเกษตรกรรมด้านใต้ เส้นทางเชื่อมต่ออำเภอเมืองขอนแก่น",
+        codesign:"draft"}
+    ]
+  }
+};
+
+/* ข้อคิดเห็นตัวอย่างจากกระบวนการออกแบบร่วม (สมมุติ) */
+const CODESIGN_COMMENTS = {
+  "ในเมือง":[
+    {who:"ผู้แทนอาสาสมัครสาธารณสุขประจำหมู่บ้าน", txt:"เสนอให้สื่อสารช่องทางแอปพลิเคชัน WeSafe ผ่านกลุ่มสื่อสารออนไลน์ประจำชุมชนที่มีอยู่แล้ว แทนการจัดประชุมเพิ่ม เนื่องจากประชาชนวัยทำงานไม่สะดวกเข้าร่วมประชุมในเวลาราชการ", adopted:true},
+    {who:"ผู้แทนผู้รอดชีวิต", txt:"เสนอให้เพิ่มจุดให้ข้อมูลที่แผนกผู้ป่วยนอกและห้องน้ำหญิงของโรงพยาบาล ซึ่งเป็นจุดที่ผู้ถูกกระทำสามารถอ่านข้อมูลได้โดยไม่ถูกสังเกต", adopted:true},
+    {who:"ผู้แทนเทศบาลนครขอนแก่น", txt:"รับเป็นหน่วยประสานการจำแนกชุมชนแออัดที่ขึ้นทะเบียน และเสนอผนวกกิจกรรมเข้ากับแผนชุมชนประจำปีของเทศบาล", adopted:true}
+  ],
+  "น้ำพอง":[
+    {who:"ผู้แทนองค์กรปกครองส่วนท้องถิ่น", txt:"เสนอให้ผนวกการชี้แจงเครื่องมือและผลแผนที่ความเสี่ยงเข้ากับการประชุมกำนันผู้ใหญ่บ้านประจำเดือน เพื่อลดภาระการประชุมซ้ำซ้อน", adopted:true},
+    {who:"ผู้แทนสถานประกอบการ", txt:"ยินดีสนับสนุนการอบรมเจ้าหน้าที่ฝ่ายบุคคล และเสนอให้จัดในช่วงก่อนเปิดฤดูหีบอ้อยซึ่งเป็นช่วงที่ภาระงานยังไม่หนาแน่น", adopted:true},
+    {who:"ผู้แทนอาสาสมัครสาธารณสุขประจำหมู่บ้าน", txt:"เสนอให้จัดทำสื่อความรู้ฉบับภาษาเข้าใจง่ายสำหรับแรงงานตามฤดูกาลที่มาจากต่างพื้นที่", adopted:false}
+  ]
+};
+
+const CODESIGN_STATUS = {
+  draft:"ร่างข้อเสนอตั้งต้นจากระบบ",
+  reviewing:"อยู่ระหว่างการพิจารณาของคณะที่ปรึกษาชุมชน",
+  adopted:"คณะที่ปรึกษาชุมชนพิจารณาและปรับข้อเสนอแล้ว (ตัวอย่าง)"
+};
+
+const TIER_NAME = {g:"สีเขียว", y:"สีเหลือง", r:"สีแดง"};
+
+function composite(d){ return Math.round(d.reduce((a,b)=>a+b,0)/d.length); }
+function tierOf(s){ return s>=65 ? "r" : s>=40 ? "y" : "g"; }
+function drivers(d){
+  const idx = d.map((v,i)=>({v,i})).filter(x=>x.v>=DRIVER_THRESHOLD).sort((a,b)=>b.v-a.v);
+  if(idx.length===0){ /* พื้นที่คะแนนต่ำ ใช้มิติสูงสุดหนึ่งมิติเพื่อการเฝ้าระวัง */
+    const m = d.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v)[0];
+    return {list:[], watch:m};
+  }
+  return {list:idx, watch:null};
+}
+function rate(t){ return Math.round(t.cases/t.pop*100000); }
+
+let district = "muang", filter = "all", selected = null;
+
+function setDistrict(k){
+  district = k; selected = null; filter = "all";
+  document.getElementById("tab-muang").classList.toggle("active", k==="muang");
+  document.getElementById("tab-namphong").classList.toggle("active", k==="namphong");
+  document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.tier==="all"));
+  render();
+}
+function setFilter(t, el){
+  filter = t;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
+  el.classList.add("on");
+  renderMap();
+}
+function selectTambon(i){ selected = i; renderMap(); renderDetail(); }
+
+function render(){
+  const d = DATA[district];
+  document.getElementById("map-title").textContent = "แผนภาพความเสี่ยงระดับตำบล " + d.name;
+  renderSummary(); renderMap(); renderDetail(); renderCompare();
+}
+
+function renderSummary(){
+  const d = DATA[district];
+  const t = d.tambons.map(x=>tierOf(composite(x.d)));
+  const cnt = {r:0,y:0,g:0}; t.forEach(x=>cnt[x]++);
+  const totalCases = d.tambons.reduce((a,x)=>a+x.cases,0);
+  document.getElementById("summary").innerHTML = `
+    <div class="scard"><div class="lbl">จำนวนตำบลทั้งหมด</div><div class="num">${t.length}</div><div class="sub">ตำบลในพื้นที่นำร่อง</div></div>
+    <div class="scard t-red"><div class="lbl">พื้นที่ระดับสีแดง</div><div class="num">${cnt.r}</div><div class="sub">มาตรการเร่งด่วนและเข้มข้น</div></div>
+    <div class="scard t-amber"><div class="lbl">พื้นที่ระดับสีเหลือง</div><div class="num">${cnt.y}</div><div class="sub">เฝ้าระวังและมาตรการเชิงรุก</div></div>
+    <div class="scard t-green"><div class="lbl">พื้นที่ระดับสีเขียว</div><div class="num">${cnt.g}</div><div class="sub">เฝ้าระวังตามระบบปกติ</div></div>
+    <div class="scard"><div class="lbl">กรณีที่รายงานต่อปี (สมมุติ)</div><div class="num">${totalCases}</div><div class="sub">รวมทุกตำบลในอำเภอ</div></div>`;
+}
+
+function renderMap(){
+  const d = DATA[district];
+  const grid = document.getElementById("mapgrid");
+  const W = grid.clientWidth || 620;
+  const gap = 8, cw = (W - gap*(d.cols-1)) / d.cols, ch = 76;
+  grid.style.height = (d.rows*ch + (d.rows-1)*gap) + "px";
+  grid.innerHTML = d.tambons.map((t,i)=>{
+    const s = composite(t.d), tier = tierOf(s);
+    const dv = drivers(t.d);
+    const dvTxt = dv.list.length ? DIMS_SHORT[dv.list[0].i] : "ไม่มีมิติเกินเกณฑ์";
+    const dim = (filter!=="all" && filter!==tier) ? " dim" : "";
+    const sel = (selected===i) ? " selected" : "";
+    return `<div class="tile ${tier}${dim}${sel}" style="left:${t.c*(cw+gap)}px;top:${t.r*(ch+gap)}px;width:${cw}px;height:${ch}px" onclick="selectTambon(${i})">
+      <div class="tname">ต.${t.n}</div><div class="tscore">${s}</div>
+      <div class="tdriver">${dvTxt}</div></div>`;
+  }).join("");
+}
+
+function radarSVG(dims, color, size, overlay){
+  const cx=size/2, cy=size/2, R=size/2-46, n=6;
+  const SHORT = ["บริบทชุมชน","ความเสี่ยง","การเข้าถึง","ความเปราะบาง","ศักยภาพชุมชน","ทรัพยากรระบบ"];
+  const pt = (i,v)=>{ const a=-Math.PI/2 + i*2*Math.PI/n; const r=R*v/100; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; };
+  let rings = "";
+  [25,50,75,100].forEach(v=>{
+    const pts = Array.from({length:n},(_,i)=>pt(i,v).join(",")).join(" ");
+    rings += `<polygon points="${pts}" fill="none" stroke="#E2EAE7" stroke-width="1"/>`;
+  });
+  let axes = "", labels = "";
+  for(let i=0;i<n;i++){
+    const [x,y]=pt(i,100); axes += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#E2EAE7"/>`;
+    const [lx,ly]=pt(i,128);
+    labels += `<text x="${lx}" y="${ly}" font-size="10.5" font-family="Sarabun" fill="#5B7370" text-anchor="middle" dominant-baseline="middle">${SHORT[i]}</text>`;
+  }
+  const poly = (arr,col,op)=>{
+    const pts = arr.map((v,i)=>pt(i,v).join(",")).join(" ");
+    return `<polygon points="${pts}" fill="${col}" fill-opacity="${op}" stroke="${col}" stroke-width="2"/>` +
+           arr.map((v,i)=>{const[x,y]=pt(i,v);return `<circle cx="${x}" cy="${y}" r="2.6" fill="${col}"/>`}).join("");
+  };
+  let body = poly(dims, color, .18);
+  if(overlay) body = poly(overlay.dims, overlay.color, .12) + body;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${rings}${axes}${body}${labels}</svg>`;
+}
+
+function renderDetail(){
+  const el = document.getElementById("detail");
+  const d = DATA[district];
+  if(selected===null){
+    const avg = DIMS_SHORT.map((_,i)=>Math.round(d.tambons.reduce((a,t)=>a+t.d[i],0)/d.tambons.length));
+    el.innerHTML = `
+      <div class="dhead"><h3>ภาพรวม${d.name.split(" จังหวัด")[0]}</h3></div>
+      <p class="hint">${d.context}</p>
+      <div class="radarbox">${radarSVG(avg, "#14564F", 300)}</div>
+      <p class="hint" style="text-align:center">ค่าเฉลี่ยคะแนนความจำเป็นรายมิติของทุกตำบลในอำเภอ</p>
+      <div class="measures"><h4>หลักการของระบบ</h4>
+      <ul>
+        <li>ทุกตำบลได้รับการวิเคราะห์ปัจจัยขับเคลื่อนความเสี่ยงจากคะแนนรายมิติ มิใช่เพียงระดับสีโดยรวม ทำให้พื้นที่สีแดงสองแห่งอาจได้รับชุดมาตรการที่ต่างกันตามสาเหตุที่ต่างกัน</li>
+        <li>พื้นที่ที่มีบริบทจำเพาะ อาทิ เขตอุตสาหกรรม หมู่บ้านจัดสรร หรือชุมชนหอพักนักศึกษา จะมีมาตรการเชิงบริบทเพิ่มเติมซึ่งกำหนดร่วมกับคณะที่ปรึกษาชุมชน</li>
+        <li>ข้อเสนอทั้งหมดจากระบบเป็นร่างตั้งต้นเพื่อการออกแบบร่วม โดยคณะที่ปรึกษาชุมชนพิจารณา ปรับ และรับรองก่อนนำไปปฏิบัติ</li>
+      </ul></div>`;
+    return;
+  }
+  const t = d.tambons[selected], s = composite(t.d), tier = tierOf(s);
+  const dv = drivers(t.d);
+  const color = tier==="r"?"#B6423A":tier==="y"?"#C99117":"#2F8A57";
+  const drvIdx = new Set(dv.list.map(x=>x.i));
+
+  /* มาตรการจำเพาะตามปัจจัยขับเคลื่อน */
+  let specificHTML = "";
+  if(dv.list.length){
+    specificHTML = dv.list.map(x=>{
+      const m = DIM_MEASURES[x.i];
+      return `<li><b>${m.name}</b> (มิติ${DIMS_SHORT[x.i]} คะแนน ${x.v})
+        <ul>${m.items.map(it=>`<li>${it.t}<span class="why">เหตุผล ${it.w}</span></li>`).join("")}</ul></li>`;
+    }).join("");
+  } else {
+    specificHTML = `<li>ไม่มีมิติใดมีคะแนนถึงเกณฑ์ปัจจัยขับเคลื่อน (55 ขึ้นไป) มิติที่ควรเฝ้าระวังคือ${DIMS_SHORT[dv.watch.i]} (คะแนน ${dv.watch.v}) โดยติดตามแนวโน้มตามรอบการทบทวนข้อมูล</li>`;
+  }
+
+  /* มาตรการเชิงบริบทจำเพาะพื้นที่ */
+  const contextualHTML = t.special ?
+    `<h4><span class="tag contextual">เชิงบริบท</span>มาตรการจำเพาะตามบริบทของตำบล${t.n}</h4>
+     <ul><li>${t.special.t}<span class="why">เหตุผล ${t.special.w}</span></li></ul>` : "";
+
+  /* กระบวนการออกแบบร่วม */
+  const comments = CODESIGN_COMMENTS[t.n] || [];
+  const commentsHTML = comments.length ?
+    comments.map(c=>`<div class="comment"><b>${c.who}</b> ${c.adopted?'<span class="adopted">นำไปปรับข้อเสนอแล้ว</span>':''}<br>${c.txt}</div>`).join("") :
+    `<div class="comment" style="color:var(--muted)">ยังไม่มีข้อคิดเห็น ระบบจะเปิดรับข้อคิดเห็นเมื่อคณะที่ปรึกษาชุมชนของพื้นที่เริ่มพิจารณาร่างข้อเสนอ</div>`;
+
+  const base = TIER_BASE[tier];
+
+  el.innerHTML = `
+    <div class="dhead">
+      <h3>ตำบล${t.n}</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="tierpill ${tier}">ระดับ${TIER_NAME[tier]}</span>
+        <span class="codesignpill">${CODESIGN_STATUS[t.codesign]}</span>
+      </div>
+    </div>
+    <div class="profile">${t.profile}</div>
+    <div class="statrow">
+      <div class="stat"><div class="l">คะแนนความจำเป็นรวม</div><div class="v">${s}</div><div class="u">จาก 100 คะแนน</div></div>
+      <div class="stat"><div class="l">กรณีที่รายงานต่อปี (สมมุติ)</div><div class="v">${t.cases}</div><div class="u">ประชากรประมาณ ${t.pop.toLocaleString("th-TH")} คน</div></div>
+      <div class="stat"><div class="l">อัตราต่อประชากรแสนคน (สมมุติ)</div><div class="v">${rate(t)}</div><div class="u">คำนวณจากข้อมูลสมมุติ</div></div>
+    </div>
+    <div class="radarbox">${radarSVG(t.d, color, 290)}</div>
+    <div class="bars">${t.d.map((v,i)=>`
+      <div class="bar"><span class="bl">${DIMS_SHORT[i]}${drvIdx.has(i)?'<span class="drvtag">ปัจจัยขับเคลื่อน</span>':''}</span>
+      <span class="track"><span class="fill${drvIdx.has(i)?' drv':''}" style="width:${v}%"></span></span>
+      <span class="bv">${v}</span></div>`).join("")}
+    </div>
+    <div class="measures">
+      <h4><span class="tag specific">จำเพาะพื้นที่</span>มาตรการตามปัจจัยขับเคลื่อนของตำบล${t.n}</h4>
+      <ol>${specificHTML}</ol>
+      ${contextualHTML}
+      <h4 style="margin-top:10px"><span class="tag base">พื้นฐาน</span>${base.title}</h4>
+      <ul>${base.items.map(x=>`<li>${x}</li>`).join("")}</ul>
+    </div>
+    <div class="codesign">
+      <h4>กระบวนการออกแบบร่วมกับคณะที่ปรึกษาชุมชน</h4>
+      ${commentsHTML}
+      <div class="cinput">
+        <input id="cbox" type="text" placeholder="บันทึกข้อคิดเห็นของคณะที่ปรึกษาชุมชน (จำลอง)">
+        <button onclick="addComment('${t.n}')">บันทึก</button>
+      </div>
+      <p class="cnote">คณะที่ปรึกษาชุมชนประกอบด้วยผู้นำชุมชน อาสาสมัครสาธารณสุขประจำหมู่บ้าน ผู้แทนองค์กรปกครองส่วนท้องถิ่น และผู้รอดชีวิต ข้อคิดเห็นในหน้าจอนี้เป็นตัวอย่างสมมุติ และข้อความที่พิมพ์จะแสดงเฉพาะในหน้าจอนี้โดยไม่ถูกจัดเก็บ</p>
+    </div>
+    <p class="rev-note">มิติที่ 5 และมิติที่ 6 แสดงคะแนนแบบกลับด้าน กล่าวคือ คะแนนสูงหมายถึงศักยภาพหรือทรัพยากรที่ยังจำกัด ข้อมูลทั้งหมดเป็นข้อมูลสมมุติเพื่อการสาธิต</p>`;
+}
+
+function addComment(name){
+  const box = document.getElementById("cbox");
+  const v = (box.value||"").trim();
+  if(!v) return;
+  if(!CODESIGN_COMMENTS[name]) CODESIGN_COMMENTS[name] = [];
+  CODESIGN_COMMENTS[name].push({who:"ข้อคิดเห็นที่บันทึกในหน้าจอสาธิต", txt:v, adopted:false});
+  renderDetail();
+}
+
+function renderCompare(){
+  const el = document.getElementById("compgrid");
+  el.innerHTML = ["muang","namphong"].map(k=>{
+    const d = DATA[k];
+    const tiers = d.tambons.map(t=>tierOf(composite(t.d)));
+    const cnt = {r:0,y:0,g:0}; tiers.forEach(x=>cnt[x]++);
+    const n = tiers.length;
+    const avg = DIMS_SHORT.map((_,i)=>Math.round(d.tambons.reduce((a,t)=>a+t.d[i],0)/n));
+    const totalCases = d.tambons.reduce((a,t)=>a+t.cases,0);
+    const totalPop = d.tambons.reduce((a,t)=>a+t.pop,0);
+    return `<div class="compcol">
+      <h3>${d.name.split(" จังหวัด")[0]}</h3>
+      <div class="ctx">${d.context}</div>
+      <div class="tierline">
+        <i style="width:${cnt.r/n*100}%;background:var(--red)"></i>
+        <i style="width:${cnt.y/n*100}%;background:var(--amber)"></i>
+        <i style="width:${cnt.g/n*100}%;background:var(--green)"></i>
+      </div>
+      <div class="tiercount">
+        <span>สีแดง ${cnt.r} ตำบล</span><span>สีเหลือง ${cnt.y} ตำบล</span><span>สีเขียว ${cnt.g} ตำบล</span>
+      </div>
+      <div class="tiercount" style="margin-top:4px">
+        <span>กรณีที่รายงานต่อปี (สมมุติ) ${totalCases} กรณี</span>
+        <span>อัตราต่อแสนคน ${Math.round(totalCases/totalPop*100000)}</span>
+      </div>
+      <div class="avgdims">${avg.map((v,i)=>`
+        <div class="row"><span style="color:var(--muted);font-weight:600">${DIMS_SHORT[i]}</span>
+        <span class="track"><span class="fill" style="width:${v}%;background:${k==="muang"?"#14564F":"#5E8C7F"}"></span></span>
+        <span style="font-family:Anuphan;font-weight:700;text-align:right">${v}</span></div>`).join("")}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+window.addEventListener("resize", renderMap);
+render();
+</script>
+</body>
+</html>
